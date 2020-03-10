@@ -128,7 +128,9 @@ export default class TarballFetcher extends BaseFetcher {
 
     const hashValidateStream = new ssri.integrityStream(hashInfo);
     const integrityValidateStream = new ssri.integrityStream(integrityInfo);
-
+    
+    // $add log
+    this.config.reporter.verbose(`this.dest ${this.dest}`);
     const untarStream = tarFs.extract(this.dest, {
       strip: 1,
       dmode: 0o755, // all dirs should be readable
@@ -223,6 +225,11 @@ export default class TarballFetcher extends BaseFetcher {
     const tarPaths = this.getLocalPaths(override);
     const stream = await fsUtil.readFirstAvailableStream(tarPaths);
 
+    // $add log
+    this.reporter.verbose(`override ${override}`);
+    this.reporter.verbose(`tarPaths ${tarPaths}`);
+    this.reporter.verbose(`stream ${stream}`);
+    this.reporter.verbose(`stream ${stream.path}`);
     return new Promise((resolve, reject) => {
       if (!stream) {
         reject(new MessageError(this.reporter.lang('tarballNotInNetworkOrCache', this.reference, tarPaths)));
@@ -249,6 +256,9 @@ export default class TarballFetcher extends BaseFetcher {
   async fetchFromExternal(): Promise<FetchedOverride> {
     const registry = this.config.registries[this.registry];
 
+    // $add log
+    this.reporter.verbose(`this.reference ${this.reference}`);
+    this.reporter.verbose(`this.packageName ${this.packageName}`);
     try {
       const headers = this.requestHeaders();
       return await registry.request(
@@ -286,6 +296,9 @@ export default class TarballFetcher extends BaseFetcher {
         this.packageName,
       );
     } catch (err) {
+      // $add log
+      this.config.reporter.verbose(`err ${err}`);
+
       const tarballMirrorPath = this.getTarballMirrorPath();
       const tarballCachePath = this.getTarballCachePath();
 
@@ -320,15 +333,22 @@ export default class TarballFetcher extends BaseFetcher {
   }
 
   _fetch(): Promise<FetchedOverride> {
+    
     const isFilePath = this.reference.startsWith('file:');
     this.reference = removePrefix(this.reference, 'file:');
     const urlParse = url.parse(this.reference);
+
+    // $add log 
+    this.reporter.verbose(`isFilePath ${isFilePath}`);
+    this.reporter.verbose(`this.reference ${this.reference}`);
+    this.reporter.verbose(`urlParse ${urlParse}`);
 
     // legacy support for local paths in yarn.lock entries
     const isRelativePath = urlParse.protocol
       ? urlParse.protocol.match(/^[a-z]:$/i)
       : urlParse.pathname ? urlParse.pathname.match(/^(?:\.{1,2})?[\\\/]/) : false;
-
+      
+    this.reporter.verbose(`isRelativePath ${isRelativePath}`);
     if (isFilePath || isRelativePath) {
       return this.fetchFromLocal(this.reference);
     }
